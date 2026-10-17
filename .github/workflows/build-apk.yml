@@ -26,13 +26,12 @@ jobs:
             mkdir -p app/src/main/res/mipmap-$d
             convert icon.png -resize ${s}x${s} app/src/main/res/mipmap-$d/ic_launcher.png
           done
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-
-      - uses: android-actions/setup-android@v3
 
       - uses: gradle/actions/setup-gradle@v4
         with:
