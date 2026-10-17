@@ -1,0 +1,50 @@
+name: Build Android app
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Arrange project files
+        run: |
+          set -e
+          mkdir -p app/src/main/java/co/bosta/attendance app/src/main/res/values
+          cp app.build.gradle app/build.gradle
+          cp AndroidManifest.xml app/src/main/AndroidManifest.xml
+          cp MainActivity.java app/src/main/java/co/bosta/attendance/MainActivity.java
+          cp strings.xml themes.xml app/src/main/res/values/
+          command -v convert || (sudo apt-get update && sudo apt-get install -y imagemagick)
+          convert -size 512x512 xc:none -fill '#E30613' -draw 'roundrectangle 0,0 511,511 112,112' \
+            -fill white -font DejaVu-Sans-Bold -pointsize 230 -gravity center -annotate +0+0 'HR' icon.png
+          for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            d=${pair%%:*}; s=${pair##*:}
+            mkdir -p app/src/main/res/mipmap-$d
+            convert icon.png -resize ${s}x${s} app/src/main/res/mipmap-$d/ic_launcher.png
+          done
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build APK
+        run: gradle :app:assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk Attendance.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Attendance-APK
+          path: Attendance.apk
